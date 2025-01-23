@@ -11,11 +11,9 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS sensor_data (
+        CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            latitude REAL,
-            longitude REAL,
-            temperature REAL,
+            message TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
         """
@@ -26,34 +24,32 @@ def init_db():
 init_db()
 
 # Pydantic model for incoming data
-class SensorData(BaseModel):
-    latitude: float
-    longitude: float
-    temperature: float
+class Message(BaseModel):
+    message: str
 
 # Endpoint to receive and store data
-@app.post("/data")
-async def receive_data(data: SensorData):
+@app.post("/message")
+async def receive_message(data: Message):
     try:
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO sensor_data (latitude, longitude, temperature) VALUES (?, ?, ?)",
-            (data.latitude, data.longitude, data.temperature),
+            "INSERT INTO messages (message) VALUES (?)",
+            (data.message,),
         )
         conn.commit()
         conn.close()
-        return {"message": "Data saved successfully"}
+        return {"message": "Message saved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# Endpoint to retrieve stored data (optional)
-@app.get("/data")
-def get_data():
+# Endpoint to retrieve stored data
+@app.get("/messages")
+def get_messages():
     try:
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, latitude, longitude, temperature, timestamp FROM sensor_data")
+        cursor.execute("SELECT id, message, timestamp FROM messages")
         rows = cursor.fetchall()
         conn.close()
         return {"data": rows}
