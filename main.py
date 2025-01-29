@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 import sqlite3
 
@@ -23,19 +23,15 @@ def init_db():
 
 init_db()
 
-# Pydantic model for incoming data
-class Message(BaseModel):
-    message: str
-
-# Endpoint to receive and store data
-@app.post("/message")
-async def receive_message(data: Message):
+# Endpoint to receive and store data via GET method
+@app.get("/message")
+async def receive_message(message: str = Query(...)):
     try:
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO messages (message) VALUES (?)",
-            (data.message,),
+            (message,),
         )
         conn.commit()
         conn.close()
