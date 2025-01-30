@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from flask import Flask, request, jsonify
+from datetime import datetime
 import sqlite3
 
-# Initialize FastAPI app
-app = FastAPI()
+# Initialize Flask app
+app = Flask(__name__)
 
 # Database setup
 def init_db():
@@ -24,9 +24,13 @@ def init_db():
 init_db()
 
 # Endpoint to receive and store data via GET method
-@app.get("/message")
-async def receive_message(message: str = Query(...)):
+@app.route("/message", methods=["GET"])
+def receive_message():
     try:
+        message = request.args.get("message")
+        if not message:
+            return jsonify({"error": "Message parameter is required"}), 400
+        
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
         cursor.execute(
@@ -35,12 +39,12 @@ async def receive_message(message: str = Query(...)):
         )
         conn.commit()
         conn.close()
-        return ""
+        return "", 200
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 # Endpoint to retrieve stored data
-@app.get("/messages")
+@app.route("/messages", methods=["GET"])
 def get_messages():
     try:
         conn = sqlite3.connect("data.db")
@@ -48,6 +52,9 @@ def get_messages():
         cursor.execute("SELECT id, message, timestamp FROM messages")
         rows = cursor.fetchall()
         conn.close()
-        return {"data": rows}
+        return jsonify({"data": rows}), 200
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
