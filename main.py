@@ -35,7 +35,7 @@ async def receive_message(message: str = Query(...)):
         )
         conn.commit()
         conn.close()
-        return {"message": "Message saved successfully"}
+        return ""
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
